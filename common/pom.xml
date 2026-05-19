@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.fiap.feedback</groupId>
+        <artifactId>tech-challenge-fiap-phase-4</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>common</artifactId>
+    <name>common</name>
+    <description>
+        Shared library: domain entities, application use cases, ports,
+        and GCP infrastructure adapters. Consumed by every function module.
+    </description>
+
+    <dependencies>
+        <!-- CDI for @ApplicationScoped on adapters and use cases -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
+
+        <!-- Bean validation for input port commands -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-validator</artifactId>
+        </dependency>
+
+        <!-- Mailer (Gmail SMTP adapter) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mailer</artifactId>
+        </dependency>
+
+        <!-- JSON serialization for Pub/Sub payloads -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson</artifactId>
+        </dependency>
+
+        <!-- GCP adapters: Firestore + Pub/Sub -->
+        <dependency>
+            <groupId>io.quarkiverse.googlecloudservices</groupId>
+            <artifactId>quarkus-google-cloud-firestore</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.googlecloudservices</groupId>
+            <artifactId>quarkus-google-cloud-pubsub</artifactId>
+        </dependency>
+
+        <!-- Tests -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.26.3</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+              Generates META-INF/jandex.idx so Quarkus can discover CDI beans
+              (domain ports, use-case services, infrastructure adapters) from
+              this module when it is consumed as a dependency by each function.
+            -->
+            <plugin>
+                <groupId>io.smallrye</groupId>
+                <artifactId>jandex-maven-plugin</artifactId>
+                <version>3.2.2</version>
+                <executions>
+                    <execution>
+                        <id>make-index</id>
+                        <goals>
+                            <goal>jandex</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

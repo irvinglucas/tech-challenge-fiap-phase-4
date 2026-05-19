@@ -1,0 +1,84 @@
+{
+  "_comment": "Alert policies applied via 'gcloud alpha monitoring policies create --policy-from-file=<file>'. Replace ${CHANNEL_ID} with the channel name returned by setup.sh (e.g. projects/PROJECT_ID/notificationChannels/123).",
+  "policies": [
+    {
+      "displayName": "feedback-api: HTTP 5xx error rate",
+      "documentation": {
+        "content": "Triggers when the feedback-api Cloud Function returns 5xx errors at a non-trivial rate. Investigate logs at https://console.cloud.google.com/logs.",
+        "mimeType": "text/markdown"
+      },
+      "conditions": [
+        {
+          "displayName": "5xx error count > 0 over 5 min",
+          "conditionThreshold": {
+            "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"feedback-api\" AND metric.type = \"run.googleapis.com/request_count\" AND metric.labels.response_code_class = \"5xx\"",
+            "comparison": "COMPARISON_GT",
+            "thresholdValue": 0,
+            "duration": "300s",
+            "aggregations": [
+              {
+                "alignmentPeriod": "60s",
+                "perSeriesAligner": "ALIGN_RATE"
+              }
+            ]
+          }
+        }
+      ],
+      "combiner": "OR",
+      "enabled": true,
+      "notificationChannels": ["${CHANNEL_ID}"]
+    },
+    {
+      "displayName": "notification-handler: execution errors",
+      "documentation": {
+        "content": "Triggers when the urgent-feedback notification function fails. Likely causes: Gmail auth failure, malformed Pub/Sub envelope, or admin-email secret missing."
+      },
+      "conditions": [
+        {
+          "displayName": "Failed executions > 0",
+          "conditionThreshold": {
+            "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"notification-handler\" AND metric.type = \"run.googleapis.com/request_count\" AND metric.labels.response_code_class = \"5xx\"",
+            "comparison": "COMPARISON_GT",
+            "thresholdValue": 0,
+            "duration": "300s",
+            "aggregations": [
+              {
+                "alignmentPeriod": "60s",
+                "perSeriesAligner": "ALIGN_RATE"
+              }
+            ]
+          }
+        }
+      ],
+      "combiner": "OR",
+      "enabled": true,
+      "notificationChannels": ["${CHANNEL_ID}"]
+    },
+    {
+      "displayName": "weekly-report: execution errors",
+      "documentation": {
+        "content": "Triggers when the weekly report function fails. The job runs on Cloud Scheduler 'weekly-report-job' (Mon 11:00 UTC); a failed run usually means a Firestore or SMTP problem."
+      },
+      "conditions": [
+        {
+          "displayName": "Failed executions > 0",
+          "conditionThreshold": {
+            "filter": "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"weekly-report\" AND metric.type = \"run.googleapis.com/request_count\" AND metric.labels.response_code_class = \"5xx\"",
+            "comparison": "COMPARISON_GT",
+            "thresholdValue": 0,
+            "duration": "300s",
+            "aggregations": [
+              {
+                "alignmentPeriod": "60s",
+                "perSeriesAligner": "ALIGN_RATE"
+              }
+            ]
+          }
+        }
+      ],
+      "combiner": "OR",
+      "enabled": true,
+      "notificationChannels": ["${CHANNEL_ID}"]
+    }
+  ]
+}

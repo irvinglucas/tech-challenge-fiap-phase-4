@@ -1,0 +1,43 @@
+# Build output
+target/
+**/target/
+build/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+.factorypath
+nbproject/
+nbactions.xml
+nb-configuration.xml
+
+# Quarkus
+.quarkus/
+**/.quarkus/
+
+# Logs
+*.log
+hs_err_pid*
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Secrets (never commit!)
+*.env
+.env
+.env.local
+.env.*.local
+**/credentials.json
+**/service-account*.json
+*.key
+*.pem
+
+# Maven Wrapper local cache (the wrapper itself is committed)
+.mvn/wrapper/maven-wrapper.jar

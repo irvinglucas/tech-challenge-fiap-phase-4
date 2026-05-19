@@ -1,0 +1,114 @@
+{
+  "_comment": "Apply with: gcloud monitoring dashboards create --config-from-file=infra/monitoring/dashboard.json",
+  "displayName": "FIAP Feedback Platform",
+  "mosaicLayout": {
+    "columns": 12,
+    "tiles": [
+      {
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Request count (per function)",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=monitoring.regex.full_match(\"feedback-api|notification-handler|weekly-report\") metric.type=\"run.googleapis.com/request_count\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": ["resource.labels.service_name"]
+                    }
+                  }
+                },
+                "plotType": "LINE"
+              }
+            ],
+            "yAxis": {"scale": "LINEAR"}
+          }
+        }
+      },
+      {
+        "xPos": 6,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Error rate (5xx)",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=monitoring.regex.full_match(\"feedback-api|notification-handler|weekly-report\") metric.type=\"run.googleapis.com/request_count\" metric.labels.response_code_class=\"5xx\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": ["resource.labels.service_name"]
+                    }
+                  }
+                },
+                "plotType": "LINE"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "yPos": 4,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Request latency p95 (ms)",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=monitoring.regex.full_match(\"feedback-api|notification-handler|weekly-report\") metric.type=\"run.googleapis.com/request_latencies\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_PERCENTILE_95",
+                      "groupByFields": ["resource.labels.service_name"]
+                    }
+                  }
+                },
+                "plotType": "LINE"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "xPos": 6,
+        "yPos": 4,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Active instances",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=monitoring.regex.full_match(\"feedback-api|notification-handler|weekly-report\") metric.type=\"run.googleapis.com/container/instance_count\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN",
+                      "crossSeriesReducer": "REDUCE_MAX",
+                      "groupByFields": ["resource.labels.service_name"]
+                    }
+                  }
+                },
+                "plotType": "STACKED_AREA"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

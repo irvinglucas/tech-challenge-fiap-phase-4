@@ -1,0 +1,151 @@
+{
+  "info": {
+    "name": "FIAP Feedback Platform",
+    "_postman_id": "b1f8c0d7-1234-4567-89ab-cdef12345678",
+    "description": "End-to-end tests for the FIAP Phase 4 Feedback Platform. Import the companion environment (`feedback-platform.postman_environment.json`) and adjust `baseUrl` to point at either the local Quarkus dev mode (`http://localhost:8080`) or the deployed Cloud Function URL.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Submit Evaluation",
+      "item": [
+        {
+          "name": "Happy path — BAIXA urgency (no notification)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/avaliacao", "host": ["{{baseUrl}}"], "path": ["avaliacao"]},
+            "body": {"mode": "raw", "raw": "{\n  \"descricao\": \"Aula excelente, professor muito didático\",\n  \"nota\": 9\n}"}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns id', () => pm.expect(body.id).to.be.a('string'));",
+                  "pm.test('urgencia is BAIXA', () => pm.expect(body.urgencia).to.eql('BAIXA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Happy path — MEDIA urgency",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/avaliacao", "host": ["{{baseUrl}}"], "path": ["avaliacao"]},
+            "body": {"mode": "raw", "raw": "{\n  \"descricao\": \"Conteúdo ok, ritmo um pouco lento\",\n  \"nota\": 5\n}"}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('urgencia is MEDIA', () => pm.expect(pm.response.json().urgencia).to.eql('MEDIA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Happy path — ALTA urgency (triggers notification email)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/avaliacao", "host": ["{{baseUrl}}"], "path": ["avaliacao"]},
+            "body": {"mode": "raw", "raw": "{\n  \"descricao\": \"Conteúdo muito confuso, perdi a aula\",\n  \"nota\": 1\n}"}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('urgencia is ALTA', () => pm.expect(pm.response.json().urgencia).to.eql('ALTA'));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Validation errors",
+      "item": [
+        {
+          "name": "nota > 10 → 400",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/avaliacao", "host": ["{{baseUrl}}"], "path": ["avaliacao"]},
+            "body": {"mode": "raw", "raw": "{\"descricao\":\"x\",\"nota\":11}"}
+          },
+          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('400', () => pm.response.to.have.status(400));"]}}]
+        },
+        {
+          "name": "nota < 0 → 400",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/avaliacao", "host": ["{{baseUrl}}"], "path": ["avaliacao"]},
+            "body": {"mode": "raw", "raw": "{\"descricao\":\"x\",\"nota\":-1}"}
+          },
+          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('400', () => pm.response.to.have.status(400));"]}}]
+        },
+        {
+          "name": "blank descricao → 400",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/avaliacao", "host": ["{{baseUrl}}"], "path": ["avaliacao"]},
+            "body": {"mode": "raw", "raw": "{\"descricao\":\"\",\"nota\":5}"}
+          },
+          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('400', () => pm.response.to.have.status(400));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Liveness",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{baseUrl}}/q/health/live", "host":["{{baseUrl}}"], "path":["q","health","live"]}
+          }
+        },
+        {
+          "name": "Readiness",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{baseUrl}}/q/health/ready", "host":["{{baseUrl}}"], "path":["q","health","ready"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Weekly report (manual trigger)",
+      "item": [
+        {
+          "name": "Trigger weekly-report (requires OIDC token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{idToken}}"}
+            ],
+            "url": {"raw": "{{reportFunctionUrl}}", "host": ["{{reportFunctionUrl}}"]}
+          },
+          "description": "Generate `idToken` once with:\n\n    gcloud auth print-identity-token --audiences=$REPORT_URL\n\n…then paste it into the `idToken` Postman variable. `reportFunctionUrl` is the URL printed by `gcloud functions describe weekly-report --gen2 --format='value(serviceConfig.uri)'`."
+        }
+      ]
+    }
+  ]
+}

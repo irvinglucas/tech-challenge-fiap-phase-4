@@ -1,0 +1,123 @@
+openapi: 3.0.3
+info:
+  title: FIAP Feedback Platform API
+  description: |
+    Receives student evaluations for the FIAP Phase 4 Tech Challenge.
+
+    This document is a snapshot. Quarkus also serves a live copy at
+    `/q/openapi` and an interactive UI at `/q/swagger-ui`.
+  version: 1.0.0
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Quarkus dev mode
+  - url: https://feedback-api-<HASH>-rj.a.run.app
+    description: Cloud Function Gen2 (production) — replace <HASH>
+
+tags:
+  - name: Avaliacoes
+    description: Receives student feedback
+
+paths:
+  /avaliacao:
+    post:
+      tags: [Avaliacoes]
+      summary: Submit an evaluation
+      description: |
+        Persists an evaluation, classifies its urgency from the rating, and
+        (when ALTA) publishes an urgent-feedback event for the notification
+        handler.
+      operationId: submitAvaliacao
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvaliacaoRequest'
+            examples:
+              alta:
+                summary: Critical rating (ALTA)
+                value: { descricao: "Aula muito ruim", nota: 1 }
+              media:
+                summary: Average rating (MEDIA)
+                value: { descricao: "Conteúdo ok", nota: 5 }
+              baixa:
+                summary: High rating (BAIXA, no notification)
+                value: { descricao: "Aula excelente", nota: 9 }
+      responses:
+        '201':
+          description: Evaluation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvaliacaoResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+  /q/health/live:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      responses:
+        '200': { description: Service is up }
+  /q/health/ready:
+    get:
+      tags: [Health]
+      summary: Readiness probe
+      responses:
+        '200': { description: Service is ready to serve traffic }
+
+components:
+  schemas:
+    AvaliacaoRequest:
+      type: object
+      required: [descricao, nota]
+      properties:
+        descricao:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: Descrição textual da avaliação
+          example: "Aula muito clara, gostei bastante"
+        nota:
+          type: integer
+          minimum: 0
+          maximum: 10
+          description: Nota de 0 a 10
+          example: 8
+    AvaliacaoResponse:
+      type: object
+      required: [id, urgencia]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador único atribuído à avaliação
+        urgencia:
+          $ref: '#/components/schemas/Urgencia'
+    Urgencia:
+      type: string
+      enum: [ALTA, MEDIA, BAIXA]
+      description: |
+        Urgency derived from the rating:
+        - `ALTA`  — nota in [0, 3]
+        - `MEDIA` — nota in [4, 6]
+        - `BAIXA` — nota in [7, 10]
+    ErrorBody:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Invalid request payload
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string, example: nota }
+              message: { type: string, example: "must be less than or equal to 10" }

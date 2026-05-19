@@ -1,0 +1,70 @@
+name: Deploy notification-handler
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'common/**'
+      - 'notification-handler/**'
+      - 'pom.xml'
+      - '.github/workflows/deploy-notification.yml'
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION || 'southamerica-east1' }}
+  FUNCTION_NAME: notification-handler
+  SERVICE_ACCOUNT: notification-sa
+  URGENT_TOPIC: urgent-feedback
+  JAVA_VERSION: '21'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Build notification-handler JAR
+        run: ./mvnw -B -pl notification-handler -am package -DskipTests
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Deploy ${{ env.FUNCTION_NAME }}
+        run: |
+          set -e
+          gcloud functions deploy "${FUNCTION_NAME}" \
+            --gen2 \
+            --runtime=java21 \
+            --region="${REGION}" \
+            --source=notification-handler/target/deployment \
+            --entry-point=io.quarkus.gcp.functions.QuarkusCloudEventsFunction \
+            --trigger-topic="${URGENT_TOPIC}" \
+            --service-account="${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com" \
+            --memory=512Mi \
+            --cpu=1 \
+            --timeout=300s \
+            --max-instances=5 \
+            --set-secrets="GMAIL_USERNAME=gmail-username:latest,GMAIL_APP_PASSWORD=gmail-app-password:latest,ADMIN_EMAIL=admin-email:latest"
+
+      - name: Print deployment summary
+        run: |
+          gcloud functions describe "${FUNCTION_NAME}" --gen2 --region="${REGION}" \
+            --format='value(state,serviceConfig.uri,eventTrigger.eventType,eventTrigger.pubsubTopic)' \
+            | awk 'BEGIN{print "name:state:uri:eventType:topic"}{print "'${FUNCTION_NAME}'\t" $0}'

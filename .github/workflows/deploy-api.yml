@@ -1,0 +1,78 @@
+name: Deploy feedback-api
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'common/**'
+      - 'feedback-api/**'
+      - 'pom.xml'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+    inputs:
+      min_instances:
+        description: 'Min warm instances (set to 1 only while recording the demo video; 0 otherwise)'
+        type: choice
+        options: ['0', '1']
+        default: '0'
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION || 'southamerica-east1' }}
+  FUNCTION_NAME: feedback-api
+  SERVICE_ACCOUNT: feedback-api-sa
+  JAVA_VERSION: '21'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Build feedback-api JAR
+        run: ./mvnw -B -pl feedback-api -am package -DskipTests
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Deploy ${{ env.FUNCTION_NAME }}
+        run: |
+          set -e
+          gcloud functions deploy "${FUNCTION_NAME}" \
+            --gen2 \
+            --runtime=java21 \
+            --region="${REGION}" \
+            --source=feedback-api/target/deployment \
+            --entry-point=io.quarkus.gcp.functions.http.QuarkusHttpFunction \
+            --trigger-http \
+            --allow-unauthenticated \
+            --service-account="${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com" \
+            --memory=512Mi \
+            --cpu=1 \
+            --timeout=60s \
+            --max-instances=5 \
+            --min-instances=${{ github.event.inputs.min_instances || '0' }}
+
+      - name: Print function URL
+        run: |
+          URL=$(gcloud functions describe "${FUNCTION_NAME}" --gen2 \
+            --region="${REGION}" --format='value(serviceConfig.uri)')
+          echo "::notice::feedback-api deployed at ${URL}"
+          echo "Try it: curl -X POST -H 'Content-Type: application/json' \\"
+          echo "  -d '{\"descricao\":\"teste\",\"nota\":2}' ${URL}/avaliacao"

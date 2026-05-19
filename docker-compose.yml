@@ -1,0 +1,23 @@
+services:
+  # GCP Firestore + Pub/Sub emulators for fully-offline local development.
+  # Quarkus dev mode reads FIRESTORE_EMULATOR_HOST and PUBSUB_EMULATOR_HOST
+  # automatically — no source changes needed.
+  firestore:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    container_name: fiap-firestore-emulator
+    command: >
+      gcloud emulators firestore start
+      --host-port=0.0.0.0:8085
+      --project=fiap-feedback-local
+    ports:
+      - "8085:8085"
+
+  pubsub:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    container_name: fiap-pubsub-emulator
+    command: >
+      gcloud beta emulators pubsub start
+      --host-port=0.0.0.0:8086
+      --project=fiap-feedback-local
+    ports:
+      - "8086:8086"
