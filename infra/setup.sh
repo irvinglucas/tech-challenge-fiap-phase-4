@@ -154,6 +154,7 @@ grant github-deployer-sa roles/run.admin
 grant github-deployer-sa roles/iam.serviceAccountUser
 grant github-deployer-sa roles/storage.admin
 grant github-deployer-sa roles/artifactregistry.admin
+grant github-deployer-sa roles/cloudscheduler.admin
 
 # The Eventarc Pub/Sub trigger relies on the Pub/Sub service agent being able
 # to mint tokens for the function's service account. (Required since Eventarc
