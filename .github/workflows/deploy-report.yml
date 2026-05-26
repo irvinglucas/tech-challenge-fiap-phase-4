@@ -2,7 +2,7 @@ name: Deploy weekly-report
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'common/**'
       - 'weekly-report/**'

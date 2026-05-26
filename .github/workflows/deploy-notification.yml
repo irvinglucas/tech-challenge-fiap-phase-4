@@ -2,7 +2,7 @@ name: Deploy notification-handler
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'common/**'
       - 'notification-handler/**'

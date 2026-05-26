@@ -2,7 +2,7 @@ name: Deploy feedback-api
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'common/**'
       - 'feedback-api/**'
