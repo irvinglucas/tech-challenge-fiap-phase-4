@@ -54,7 +54,7 @@ jobs:
             --runtime=java21 \
             --region="${REGION}" \
             --source=weekly-report/target/deployment \
-            --entry-point=com.fiap.feedback.report.WeeklyReportHandler \
+            --entry-point=io.quarkus.gcp.functions.QuarkusHttpFunction \
             --trigger-http \
             --no-allow-unauthenticated \
             --service-account="${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com" \
