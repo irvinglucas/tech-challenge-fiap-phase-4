@@ -1,7 +1,8 @@
 services:
   # GCP Firestore + Pub/Sub emulators for fully-offline local development.
-  # Quarkus dev mode reads FIRESTORE_EMULATOR_HOST and PUBSUB_EMULATOR_HOST
-  # automatically — no source changes needed.
+  # The Quarkus %dev.* config in each module's application.properties wires
+  # the application to these hosts automatically when you run quarkus:dev.
+
   firestore:
     image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
     container_name: fiap-firestore-emulator
@@ -11,6 +12,13 @@ services:
       --project=fiap-feedback-local
     ports:
       - "8085:8085"
+    healthcheck:
+      # The Firestore emulator returns 200 on "/" once the gRPC channel is up.
+      test: ["CMD-SHELL", "curl -sf http://localhost:8085/ -o /dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
 
   pubsub:
     image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
@@ -21,3 +29,32 @@ services:
       --project=fiap-feedback-local
     ports:
       - "8086:8086"
+    healthcheck:
+      # The Pub/Sub emulator returns "Ok" on "/" once it can accept REST calls.
+      test: ["CMD-SHELL", "curl -sf http://localhost:8086/ -o /dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  # One-shot init container: creates the `urgent-feedback` topic in the
+  # Pub/Sub emulator so the API can publish to it on ALTA-rated submissions.
+  # Exits cleanly once the topic exists; safe to rerun (`PUT` is idempotent).
+  pubsub-init:
+    image: curlimages/curl:8.10.1
+    container_name: fiap-pubsub-init
+    depends_on:
+      pubsub:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        echo "Creating Pub/Sub topic 'urgent-feedback' in emulator..."
+        curl -sf -X PUT \
+          "http://pubsub:8086/v1/projects/fiap-feedback-local/topics/urgent-feedback" \
+          -o /tmp/out.json
+        cat /tmp/out.json
+        echo
+        echo "Done."

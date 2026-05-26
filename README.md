@@ -57,19 +57,42 @@ flowchart LR
 
 ## Local development
 
-Prerequisites: JDK 21+ and Docker.
+Prerequisites: JDK 21+ and Docker. (If you hit
+`permission denied while trying to connect to the docker API` on Linux,
+add yourself to the `docker` group:
+`sudo usermod -aG docker $USER && newgrp docker`.)
 
 ```bash
-# 1. Start the GCP emulators
+# 1. Start the Firestore + Pub/Sub emulators and seed the urgent-feedback topic
 docker compose up -d
 
-# 2. Export emulator hosts for Quarkus
-export FIRESTORE_EMULATOR_HOST=localhost:8085
-export PUBSUB_EMULATOR_HOST=localhost:8086
-export GOOGLE_CLOUD_PROJECT=fiap-feedback-local
-
-# 3. Run the API in Quarkus dev mode
+# 2. Run the API in Quarkus dev mode (auto-wires to the emulators via %dev config)
 ./mvnw -pl feedback-api -am quarkus:dev
+```
+
+That's it — no env vars to export. The `%dev.*` block in each module's
+`application.properties` points the GCP client at `localhost:8085` / `:8086`
+and disables the Application Default Credentials lookup, so the app starts
+clean without any GCP login on your machine.
+
+What `docker compose up -d` does:
+
+- starts the Firestore emulator on `:8085`
+- starts the Pub/Sub emulator on `:8086`
+- runs a one-shot `pubsub-init` container that waits for Pub/Sub to be
+  healthy, then creates the `urgent-feedback` topic so ALTA submissions
+  have somewhere to publish
+
+Check health with `docker compose ps`; tail with
+`docker compose logs -f pubsub firestore`; stop everything with
+`docker compose down`.
+
+The same workflow works for the other two modules in dev mode against the
+same emulators — just point the `-pl` flag at them:
+
+```bash
+./mvnw -pl notification-handler -am quarkus:dev   # email mocked locally
+./mvnw -pl weekly-report        -am quarkus:dev   # email mocked locally
 ```
 
 The dev mode keeps the JVM hot and reloads sources on save. Available at:
