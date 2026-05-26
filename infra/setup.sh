@@ -71,6 +71,7 @@ gcloud services enable \
   monitoring.googleapis.com \
   iam.googleapis.com \
   iamcredentials.googleapis.com \
+  cloudresourcemanager.googleapis.com \
   --quiet
 
 # --- 3. Firestore (Native mode) ----------------------------------------------
