@@ -62,7 +62,8 @@ jobs:
             --cpu=1 \
             --timeout=540s \
             --max-instances=1 \
-            --set-secrets="GMAIL_USERNAME=gmail-username:latest,GMAIL_APP_PASSWORD=gmail-app-password:latest,ADMIN_EMAIL=admin-email:latest"
+            --set-secrets="GMAIL_USERNAME=gmail-username:latest,GMAIL_APP_PASSWORD=gmail-app-password:latest,ADMIN_EMAIL=admin-email:latest" \
+            --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID}"
 
       - name: Grant Scheduler invoke permission
         run: |

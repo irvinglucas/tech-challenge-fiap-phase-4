@@ -67,7 +67,8 @@ jobs:
             --cpu=1 \
             --timeout=60s \
             --max-instances=5 \
-            --min-instances=${{ github.event.inputs.min_instances || '0' }}
+            --min-instances=${{ github.event.inputs.min_instances || '0' }} \
+            --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID}"
 
       - name: Print function URL
         run: |
