@@ -29,6 +29,6 @@ public interface GenerateWeeklyReport {
     ) {
     }
 
-    record Entry(String descricao, Urgency urgencia, Instant dataEnvio) {
+    record Entry(String descricao, Urgency urgencia, int nota, Instant dataEnvio) {
     }
 }

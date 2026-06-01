@@ -58,7 +58,7 @@ public class GenerateWeeklyReportService implements GenerateWeeklyReport {
         List<Evaluation> evaluations = repository.findByPeriod(period);
 
         List<Entry> entries = evaluations.stream()
-                .map(e -> new Entry(e.descricao(), e.urgencia(), e.dataEnvio()))
+                .map(e -> new Entry(e.descricao(), e.urgencia(), e.nota(), e.dataEnvio()))
                 .toList();
 
         Map<LocalDate, Long> countPerDay = new TreeMap<>(evaluations.stream()
@@ -115,10 +115,11 @@ public class GenerateWeeklyReportService implements GenerateWeeklyReport {
 
         sb.append("<h3>Detalhamento</h3>")
                 .append("<table cellpadding='6' cellspacing='0' border='1'>")
-                .append("<tr><th>Descrição</th><th>Urgência</th><th>Data de envio</th></tr>");
+                .append("<tr><th>Descrição</th><th>Urgência</th><th>Nota</th><th>Data de envio</th></tr>");
         s.entries().forEach(e -> sb.append("<tr><td>")
                 .append(escapeHtml(e.descricao())).append("</td><td>")
                 .append(e.urgencia()).append("</td><td>")
+                .append(e.nota()).append("</td><td>")
                 .append(DATETIME_FMT.format(e.dataEnvio())).append("</td></tr>"));
         sb.append("</table>");
 
