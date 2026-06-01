@@ -19,6 +19,7 @@ public interface NotifyUrgentFeedback {
     record Command(
             String evaluationId,
             String descricao,
+            int nota,
             Urgency urgencia,
             Instant dataEnvio,
             String dedupeKey

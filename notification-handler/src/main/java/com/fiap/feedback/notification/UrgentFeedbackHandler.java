@@ -81,6 +81,10 @@ public class UrgentFeedbackHandler implements CloudEventsFunction {
         String descricao = Objects.requireNonNull(
                 textOrNull(payload, "descricao"),
                 "payload.descricao");
+        int nota = payload.path("nota").asInt(-1);
+        if (nota < 0) {
+            throw new IllegalArgumentException("payload.nota is missing or invalid");
+        }
         Urgency urgencia = Urgency.valueOf(Objects.requireNonNull(
                 textOrNull(payload, "urgencia"),
                 "payload.urgencia"));
@@ -96,7 +100,7 @@ public class UrgentFeedbackHandler implements CloudEventsFunction {
                 evaluationId, urgencia, dedupeKey);
 
         useCase.handle(new NotifyUrgentFeedback.Command(
-                evaluationId, descricao, urgencia, dataEnvio, dedupeKey));
+                evaluationId, descricao, nota, urgencia, dataEnvio, dedupeKey));
     }
 
     private static String textOrNull(JsonNode node, String field) {

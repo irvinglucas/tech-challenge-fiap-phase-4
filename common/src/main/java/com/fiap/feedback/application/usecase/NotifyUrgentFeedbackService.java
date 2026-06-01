@@ -16,8 +16,9 @@ import java.util.Locale;
  * Notify-urgent-feedback use case: renders the alert e-mail and dispatches it
  * via the {@link EmailSender} port.
  *
- * <p>The body intentionally contains exactly the three fields requested by the
- * Tech Challenge brief: descrição, urgência, data de envio.</p>
+ * <p>The body contains the fields required by the Tech Challenge brief
+ * (descrição, urgência, data de envio) plus the numeric rating ({@code nota})
+ * that triggered the critical classification.</p>
  */
 @ApplicationScoped
 public class NotifyUrgentFeedbackService implements NotifyUrgentFeedback {
@@ -51,6 +52,7 @@ public class NotifyUrgentFeedbackService implements NotifyUrgentFeedback {
                     <h2 style="color:#c0392b;">Feedback urgente recebido</h2>
                     <table cellpadding="6" cellspacing="0" border="0">
                       <tr><td><b>Descrição:</b></td><td>%s</td></tr>
+                      <tr><td><b>Nota:</b></td><td>%d</td></tr>
                       <tr><td><b>Urgência:</b></td><td>%s</td></tr>
                       <tr><td><b>Data de envio:</b></td><td>%s</td></tr>
                     </table>
@@ -62,6 +64,7 @@ public class NotifyUrgentFeedbackService implements NotifyUrgentFeedback {
                 </html>
                 """.formatted(
                 escapeHtml(command.descricao()),
+                command.nota(),
                 command.urgencia(),
                 DATE_FMT.format(command.dataEnvio()),
                 command.evaluationId());

@@ -20,6 +20,7 @@ class NotifyUrgentFeedbackServiceTest {
         service.handle(new NotifyUrgentFeedback.Command(
                 "eval-1",
                 "Aula confusa & demorada",
+                2,
                 Urgency.ALTA,
                 Instant.parse("2026-05-19T18:00:00Z"),
                 "pubsub-msg-id-123"));
@@ -28,6 +29,8 @@ class NotifyUrgentFeedbackServiceTest {
         RecordingEmailSender.SentEmail email = mailer.sent().get(0);
         assertThat(email.subject()).contains("ALTA");
         assertThat(email.htmlBody()).contains("Aula confusa &amp; demorada");
+        assertThat(email.htmlBody()).contains("<b>Nota:</b>");
+        assertThat(email.htmlBody()).contains(">2<");
         assertThat(email.htmlBody()).contains("ALTA");
         assertThat(email.htmlBody()).contains("eval-1");
         assertThat(email.dedupeKey()).isEqualTo("pubsub-msg-id-123");
