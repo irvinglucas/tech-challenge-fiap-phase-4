@@ -19,7 +19,6 @@ and sends a weekly aggregated report.
 ## Quick links
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — architecture, layers, security, IAM
-- [docs/demo-script.md](docs/demo-script.md) — recording the demo video
 - [docs/portability-aws-azure.md](docs/portability-aws-azure.md) — what would change to move to AWS or Azure
 - [docs/openapi.yaml](docs/openapi.yaml) — API contract
 - [docs/postman/](docs/postman/) — Postman collection + environment

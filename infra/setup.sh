@@ -165,8 +165,10 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
 
 # --- 7. Cloud Monitoring email channel ---------------------------------------
 step "Ensuring Cloud Monitoring email notification channel"
+# Monitoring filter syntax requires string literals in double quotes;
+# unquoted values like type=email or addresses with @ break parsing.
 CHANNEL_NAME="$(gcloud alpha monitoring channels list \
-  --filter="type=email AND labels.email_address=${ADMIN_EMAIL}" \
+  --filter="type=\"email\" AND labels.email_address=\"${ADMIN_EMAIL}\"" \
   --format='value(name)' | head -n1 || true)"
 if [[ -z "${CHANNEL_NAME}" ]]; then
   CHANNEL_NAME="$(gcloud alpha monitoring channels create \
@@ -184,12 +186,17 @@ bold "Provisioning complete"
 cat <<EOF
 
 Next steps:
-  1. Push to main (or run the workflows manually) — GitHub Actions will deploy
-     the three functions and print their URLs.
-  2. After 'feedback-api' is deployed, capture its URL:
-       FEEDBACK_API_URL=\$(gcloud functions describe feedback-api --gen2 \\
-         --region=${REGION} --format='value(serviceConfig.uri)')
-  3. After 'weekly-report' is deployed, create the Cloud Scheduler job:
+  1. Deploy the three functions (push to master or run GitHub Actions workflows),
+     or deploy manually with gcloud functions deploy (see README.md).
+
+  2. For CI/CD, download a key for github-deployer-sa and store it as the
+     GH secret GCP_SA_KEY:
+       gcloud iam service-accounts keys create gh-deployer.json \\
+         --iam-account=github-deployer-sa@${PROJECT_ID}.iam.gserviceaccount.com
+       gh secret set GCP_SA_KEY < gh-deployer.json   # then 'rm gh-deployer.json'
+
+  3. After 'weekly-report' is deployed, the deploy-report workflow creates the
+     Cloud Scheduler job automatically. To create it manually:
        REPORT_URL=\$(gcloud functions describe weekly-report --gen2 \\
          --region=${REGION} --format='value(serviceConfig.uri)')
        gcloud scheduler jobs create http weekly-report-job \\
@@ -202,9 +209,28 @@ Next steps:
          --region=${REGION} \\
          --member="serviceAccount:scheduler-invoker-sa@${PROJECT_ID}.iam.gserviceaccount.com" \\
          --role=roles/run.invoker
-  4. For CI/CD, download a key for github-deployer-sa and store it as the
-     GH secret GCP_SA_KEY:
-       gcloud iam service-accounts keys create gh-deployer.json \\
-         --iam-account=github-deployer-sa@${PROJECT_ID}.iam.gserviceaccount.com
-       gh secret set GCP_SA_KEY < gh-deployer.json   # then 'rm gh-deployer.json'
+
+--- Como obter as URLs das Cloud Functions (após o deploy) ---
+
+  Listar todas as funções Gen 2 na região:
+    gcloud functions list --gen2 --regions=${REGION}
+
+  URL pública da feedback-api (use no Postman/curl — endpoint: /avaliacao):
+    gcloud functions describe feedback-api --gen2 \\
+      --region=${REGION} --format='value(serviceConfig.uri)'
+
+  URL da weekly-report (privada — só Cloud Scheduler ou chamada com OIDC):
+    gcloud functions describe weekly-report --gen2 \\
+      --region=${REGION} --format='value(serviceConfig.uri)'
+
+  notification-handler (Pub/Sub — sem URL pública; disparada pelo tópico urgent-feedback):
+    gcloud functions describe notification-handler --gen2 \\
+      --region=${REGION} --format='yaml(name,state,eventTrigger)'
+
+  Teste rápido da API (substitua pela URL retornada acima):
+    curl -i -X POST "\$(gcloud functions describe feedback-api --gen2 \\
+      --region=${REGION} --format='value(serviceConfig.uri)')/avaliacao" \\
+      -H 'Content-Type: application/json' \\
+      -d '{"descricao":"teste","nota":9}'
+
 EOF
